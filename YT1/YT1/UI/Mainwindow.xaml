@@ -1,0 +1,1968 @@
+﻿<Window x:Class="FiveMQuantumTweaker2026.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FiveMQuantumTweaker2026.UI"
+        xmlns:ui="clr-namespace:FiveMQuantumTweaker2026.UI.Controls"
+        xmlns:utils="clr-namespace:FiveMQuantumTweaker2026.Utils"
+        xmlns:converters="clr-namespace:FiveMQuantumTweaker2026.Converters"
+        xmlns:models="clr-namespace:FiveMQuantumTweaker2026.Models"
+        mc:Ignorable="d"
+        Title="FiveM Quantum Tweaker 2026" 
+        Height="850" 
+        Width="1400"
+        MinHeight="700"
+        MinWidth="1200"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        BorderThickness="1"
+        BorderBrush="{StaticResource QuantumBorderBrush}"
+        ResizeMode="CanResizeWithGrip"
+        Icon="../Resources/Icons/app_icon.ico"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        StateChanged="Window_StateChanged"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.Resources>
+        <!-- Window Chrome Style -->
+        <Style TargetType="Window">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        </Style>
+
+        <!-- Converter -->
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InverseBooleanConverter x:Key="InverseBool"/>
+        <converters:PercentageConverter x:Key="PercentageConverter"/>
+        <converters:ByteSizeConverter x:Key="ByteSizeConverter"/>
+        <converters:LatencyColorConverter x:Key="LatencyColorConverter"/>
+        <converters:FpsColorConverter x:Key="FpsColorConverter"/>
+        <converters:CpuTemperatureConverter x:Key="CpuTempConverter"/>
+        <converters:BooleanToGlyphConverter x:Key="BoolToGlyph"/>
+
+        <!-- Animationen -->
+        <Storyboard x:Key="ButtonHoverAnimation" Duration="0:0:0.2">
+            <ColorAnimation Storyboard.TargetProperty="Background.Color" 
+                          To="{StaticResource QuantumHoverColor}" 
+                          Duration="0:0:0.2"/>
+        </Storyboard>
+
+        <Storyboard x:Key="ButtonPressAnimation" Duration="0:0:0.1">
+            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+        </Storyboard>
+
+        <Storyboard x:Key="QuantumPulseAnimation" RepeatBehavior="Forever" Duration="0:0:2">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                           From="0.3" To="1" 
+                           AutoReverse="True"/>
+        </Storyboard>
+
+        <!-- ToolTip Style -->
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="{StaticResource QuantumDarkBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource QuantumLightText}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource QuantumAccentPurple}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+        </Style>
+
+        <!-- DataTemplate für Performance Cards -->
+        <DataTemplate x:Key="PerformanceCardTemplate" DataType="models:PerformanceMetric">
+            <Border Background="{StaticResource QuantumCardBackground}"
+                    CornerRadius="10"
+                    Margin="5"
+                    Padding="12"
+                    BorderThickness="1"
+                    BorderBrush="{StaticResource QuantumCardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Path Data="{Binding IconPath}" 
+                              Fill="{Binding IconColor}" 
+                              Width="20" Height="20" 
+                              Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding Title}" 
+                                   FontWeight="SemiBold" 
+                                   FontSize="14"
+                                   Foreground="{StaticResource QuantumLightText}"/>
+                    </StackPanel>
+
+                    <!-- Value -->
+                    <TextBlock Grid.Row="1" 
+                               Text="{Binding Value, StringFormat={}{0:N1}}"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="{Binding ValueColor}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Margin="0,10"/>
+
+                    <!-- Footer -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                        <TextBlock Text="{Binding Unit}" 
+                                   FontSize="11"
+                                   Foreground="{StaticResource QuantumDimText}"
+                                   VerticalAlignment="Bottom"/>
+                        <TextBlock Text="{Binding TrendSymbol}" 
+                                   FontSize="14"
+                                   Foreground="{Binding TrendColor}"
+                                   Margin="5,0,0,0"
+                                   VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- DataTemplate für Tweak Profile -->
+        <DataTemplate x:Key="ProfileTemplate" DataType="models:OptimizationProfile">
+            <Border Background="{StaticResource QuantumCardBackground}"
+                    CornerRadius="8"
+                    Margin="4"
+                    Padding="12"
+                    BorderThickness="1"
+                    BorderBrush="{Binding IsActive, Converter={StaticResource BoolToGlyph}, ConverterParameter='Border'}"
+                    Cursor="Hand"
+                    MouseEnter="ProfileCard_MouseEnter"
+                    MouseLeave="ProfileCard_MouseLeave"
+                    MouseLeftButtonUp="ProfileCard_MouseLeftButtonUp">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Icon -->
+                    <Border Grid.Column="0" 
+                            Width="40" 
+                            Height="40"
+                            CornerRadius="20"
+                            Background="{Binding ProfileType, Converter={StaticResource ProfileTypeToBrush}}"
+                            Margin="0,0,12,0">
+                        <TextBlock Text="{Binding ProfileType, Converter={StaticResource ProfileTypeToIcon}}"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Info -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ProfileName}"
+                                   FontWeight="SemiBold"
+                                   FontSize="14"
+                                   Foreground="{StaticResource QuantumLightText}"/>
+                        <TextBlock Text="{Binding Description}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource QuantumDimText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,0"/>
+                        <TextBlock Text="{Binding LastUsed, StringFormat='Zuletzt: {0:dd.MM.yy HH:mm}'}"
+                                   FontSize="10"
+                                   Foreground="{StaticResource QuantumDimText}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Active Indicator -->
+                    <Border Grid.Column="2" 
+                            Width="12" 
+                            Height="12"
+                            CornerRadius="6"
+                            Background="{StaticResource QuantumAccentGreen}"
+                            Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="8" 
+                                            Color="{StaticResource QuantumAccentGreen}"
+                                            ShadowDepth="0"/>
+                        </Border.Effect>
+                    </Border>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <!-- Haupt Grid -->
+    <Grid>
+        <!-- Hintergrund mit Rauch-Effekt -->
+        <Grid.Background>
+            <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="1" RadiusY="1">
+                <GradientStop Color="#0A0A14" Offset="0"/>
+                <GradientStop Color="#06060E" Offset="0.5"/>
+                <GradientStop Color="#020208" Offset="1"/>
+            </RadialGradientBrush>
+        </Grid.Background>
+
+        <!-- Quantum Visualizer Overlay -->
+        <local:QuantumVisualizer x:Name="QuantumViz"
+                                IsEnabled="True"
+                                ParticleCount="500"
+                                Opacity="0.4"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+
+        <!-- Main Container -->
+        <Grid Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Title Bar -->
+                <RowDefinition Height="Auto"/>
+                <!-- Status Bar -->
+                <RowDefinition Height="*"/>
+                <!-- Main Content -->
+                <RowDefinition Height="Auto"/>
+                <!-- Bottom Bar -->
+            </Grid.RowDefinitions>
+
+            <!-- ===== TITLE BAR ===== -->
+            <Border Grid.Row="0" 
+                    Background="{StaticResource QuantumTitleBarBackground}"
+                    CornerRadius="10,10,0,0"
+                    Height="50"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{StaticResource QuantumDividerBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Logo und Titel -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0">
+                        <Image Source="../Resources/Icons/quantum_logo.png" 
+                               Width="28" Height="28"
+                               Margin="0,0,10,0"/>
+                        <StackPanel>
+                            <TextBlock Text="FIVEM QUANTUM TWEAKER 2026"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource QuantumAccentPurple}"/>
+                            <TextBlock Text="Advanced Performance Optimization System"
+                                       FontSize="10"
+                                       Foreground="{StaticResource QuantumDimText}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Window Controls -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0">
+                        <!-- Minimize Button -->
+                        <Button x:Name="BtnMinimize"
+                                Style="{StaticResource WindowControlButtonStyle}"
+                                Content="&#xE921;"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="14"
+                                ToolTip="Minimieren"
+                                Click="BtnMinimize_Click"/>
+
+                        <!-- Maximize/Restore Button -->
+                        <Button x:Name="BtnMaximize"
+                                Style="{StaticResource WindowControlButtonStyle}"
+                                Content="&#xE922;"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="14"
+                                ToolTip="Maximieren"
+                                Click="BtnMaximize_Click"/>
+
+                        <!-- Close Button -->
+                        <Button x:Name="BtnClose"
+                                Style="{StaticResource WindowControlButtonStyle}"
+                                Content="&#xE8BB;"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="14"
+                                ToolTip="Schließen"
+                                Click="BtnClose_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== STATUS BAR ===== -->
+            <Border Grid.Row="1" 
+                    Background="{StaticResource QuantumStatusBarBackground}"
+                    Height="40"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{StaticResource QuantumDividerBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Status -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0">
+                        <!-- Security Status -->
+                        <Border x:Name="SecurityStatusIndicator"
+                                Width="10" Height="10"
+                                CornerRadius="5"
+                                Background="{StaticResource QuantumAccentGreen}"
+                                Margin="0,0,8,0"
+                                ToolTip="Security: Active">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" 
+                                                Color="{StaticResource QuantumAccentGreen}"
+                                                ShadowDepth="0"/>
+                            </Border.Effect>
+                        </Border>
+
+                        <!-- Quantum Status -->
+                        <Border x:Name="QuantumStatusIndicator"
+                                Width="10" Height="10"
+                                CornerRadius="5"
+                                Background="{StaticResource QuantumAccentBlue}"
+                                Margin="0,0,8,0"
+                                ToolTip="Quantum Engine: Ready">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" 
+                                                Color="{StaticResource QuantumAccentBlue}"
+                                                ShadowDepth="0"/>
+                            </Border.Effect>
+                        </Border>
+
+                        <!-- Gaming Mode -->
+                        <Border x:Name="GamingModeIndicator"
+                                Width="10" Height="10"
+                                CornerRadius="5"
+                                Background="{StaticResource QuantumWarning}"
+                                Margin="0,0,8,0"
+                                ToolTip="Gaming Mode: Inactive"
+                                Visibility="Collapsed"/>
+
+                        <!-- Connection Status -->
+                        <TextBlock x:Name="TxtConnectionStatus"
+                                   Text="● Connected"
+                                   Foreground="{StaticResource QuantumAccentGreen}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Center Status -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <!-- Current Profile -->
+                        <TextBlock x:Name="TxtCurrentProfile"
+                                   Text="Profile: Quantum Default"
+                                   Foreground="{StaticResource QuantumLightText}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,20,0"/>
+
+                        <!-- Uptime -->
+                        <TextBlock x:Name="TxtUptime"
+                                   Text="Uptime: 00:00:00"
+                                   Foreground="{StaticResource QuantumDimText}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Right Status -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,15,0">
+                        <!-- FPS Counter -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                            <TextBlock Text="FPS:"
+                                       Foreground="{StaticResource QuantumDimText}"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtFps"
+                                       Text="--"
+                                       Foreground="{Binding Text, ElementName=TxtFps, Converter={StaticResource FpsColorConverter}}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       Margin="3,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Ping Counter -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                            <TextBlock Text="Ping:"
+                                       Foreground="{StaticResource QuantumDimText}"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtPing"
+                                       Text="--"
+                                       Foreground="{Binding Text, ElementName=TxtPing, Converter={StaticResource LatencyColorConverter}}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       Margin="3,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- System Time -->
+                        <TextBlock x:Name="TxtSystemTime"
+                                   Text="00:00:00"
+                                   Foreground="{StaticResource QuantumLightText}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== MAIN CONTENT ===== -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280"/>
+                    <!-- Sidebar -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Content Area -->
+                </Grid.ColumnDefinitions>
+
+                <!-- ===== SIDEBAR ===== -->
+                <Border Grid.Column="0" 
+                        Background="{StaticResource QuantumSidebarBackground}"
+                        BorderThickness="0,0,1,0"
+                        BorderBrush="{StaticResource QuantumDividerBrush}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <!-- Quick Actions -->
+                            <RowDefinition Height="*"/>
+                            <!-- Profiles -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- System Info -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Quick Actions -->
+                        <StackPanel Grid.Row="0" Margin="15,15,15,10">
+                            <TextBlock Text="QUICK ACTIONS"
+                                       Foreground="{StaticResource QuantumDimText}"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,0,8"/>
+
+                            <!-- Quantum Optimize Button -->
+                            <Button x:Name="BtnQuantumOptimize"
+                                    Style="{StaticResource QuantumActionButtonStyle}"
+                                    Content="⚡ QUANTUM OPTIMIZE"
+                                    Tag="Performance"
+                                    Click="BtnQuantumOptimize_Click"
+                                    MouseEnter="QuantumButton_MouseEnter"
+                                    MouseLeave="QuantumButton_MouseLeave">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock Text="Quantum Performance Optimization" 
+                                                       FontWeight="Bold"/>
+                                            <TextBlock Text="Apply advanced 2026 optimizations for maximum FPS" 
+                                                       Margin="0,5,0,0"/>
+                                            <TextBlock Text="• Neural CPU Scheduling" 
+                                                       Foreground="{StaticResource QuantumAccentBlue}"/>
+                                            <TextBlock Text="• Holographic Memory Management" 
+                                                       Foreground="{StaticResource QuantumAccentBlue}"/>
+                                            <TextBlock Text="• Temporal GPU Optimization" 
+                                                       Foreground="{StaticResource QuantumAccentBlue}"/>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
+
+                            <!-- Network & HitReg Button -->
+                            <Button x:Name="BtnNetworkHitReg"
+                                    Style="{StaticResource QuantumActionButtonStyle}"
+                                    Content="🌐 NETWORK + HITREG"
+                                    Tag="Network"
+                                    Click="BtnNetworkHitReg_Click"
+                                    MouseEnter="QuantumButton_MouseEnter"
+                                    Margin="0,8,0,0">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock Text="Quantum Network &amp; HitReg 2.0" 
+                                                       FontWeight="Bold"/>
+                                            <TextBlock Text="Advanced networking with temporal hit registration" 
+                                                       Margin="0,5,0,0"/>
+                                            <TextBlock Text="• Entanglement Packet Prediction" 
+                                                       Foreground="{StaticResource QuantumAccentPurple}"/>
+                                            <TextBlock Text="• Chronal Displacement (+12ms)" 
+                                                       Foreground="{StaticResource QuantumAccentPurple}"/>
+                                            <TextBlock Text="• Neural Sync Optimization" 
+                                                       Foreground="{StaticResource QuantumAccentPurple}"/>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
+
+                            <!-- System Cleaner Button -->
+                            <Button x:Name="BtnSystemCleaner"
+                                    Style="{StaticResource QuantumActionButtonStyle}"
+                                    Content="🧹 QUANTUM CLEANER"
+                                    Tag="Cleaner"
+                                    Click="BtnSystemCleaner_Click"
+                                    MouseEnter="QuantumButton_MouseEnter"
+                                    Margin="0,8,0,0">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock Text="AI-Powered System Cleaning" 
+                                                       FontWeight="Bold"/>
+                                            <TextBlock Text="Intelligent cleaning with neural garbage detection" 
+                                                       Margin="0,5,0,0"/>
+                                            <TextBlock Text="• Neural File Analysis" 
+                                                       Foreground="{StaticResource QuantumAccentGreen}"/>
+                                            <TextBlock Text="• Temporal Cache Management" 
+                                                       Foreground="{StaticResource QuantumAccentGreen}"/>
+                                            <TextBlock Text="• SSD Quantum Defrag" 
+                                                       Foreground="{StaticResource QuantumAccentGreen}"/>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
+
+                            <!-- Revert All Button -->
+                            <Button x:Name="BtnRevertAll"
+                                    Style="{StaticResource QuantumActionButtonStyle}"
+                                    Content="↩️ REVERT ALL"
+                                    Tag="Revert"
+                                    Click="BtnRevertAll_Click"
+                                    MouseEnter="QuantumButton_MouseEnter"
+                                    Margin="0,8,0,0">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock Text="100% Safe Rollback" 
+                                                       FontWeight="Bold"/>
+                                            <TextBlock Text="Restore all changes to original state" 
+                                                       Margin="0,5,0,0"/>
+                                            <TextBlock Text="• Registry Rollback" 
+                                                       Foreground="{StaticResource QuantumWarning}"/>
+                                            <TextBlock Text="• Service Restoration" 
+                                                       Foreground="{StaticResource QuantumWarning}"/>
+                                            <TextBlock Text="• System Integrity Check" 
+                                                       Foreground="{StaticResource QuantumWarning}"/>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
+
+                            <!-- Run FiveM Optimized Button -->
+                            <Button x:Name="BtnRunFiveMOptimized"
+                                    Style="{StaticResource QuantumActionButtonStyle}"
+                                    Content="🚀 RUN FIVEM OPTIMIZED"
+                                    Tag="FiveM"
+                                    Click="BtnRunFiveMOptimized_Click"
+                                    MouseEnter="QuantumButton_MouseEnter"
+                                    Margin="0,8,0,0">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock Text="FiveM Quantum Launch" 
+                                                       FontWeight="Bold"/>
+                                            <TextBlock Text="Launch FiveM with all optimizations active" 
+                                                       Margin="0,5,0,0"/>
+                                            <TextBlock Text="• Priority CPU/GPU Allocation" 
+                                                       Foreground="{StaticResource QuantumAccentCyan}"/>
+                                            <TextBlock Text="• Real-time Process Optimization" 
+                                                       Foreground="{StaticResource QuantumAccentCyan}"/>
+                                            <TextBlock Text="• Network Traffic Prioritization" 
+                                                       Foreground="{StaticResource QuantumAccentCyan}"/>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Profiles Section -->
+                        <Border Grid.Row="1" 
+                                Margin="15,0,15,15"
+                                BorderThickness="0,1,0,0"
+                                BorderBrush="{StaticResource QuantumDividerBrush}"
+                                Padding="0,15,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0">
+                                    <TextBlock Text="OPTIMIZATION PROFILES"
+                                               Foreground="{StaticResource QuantumDimText}"
+                                               FontSize="10"
+                                               FontWeight="Bold"
+                                               Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button x:Name="BtnNewProfile"
+                                                Style="{StaticResource SmallIconButtonStyle}"
+                                                Content="&#xE710;"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                ToolTip="New Profile"
+                                                Click="BtnNewProfile_Click"/>
+
+                                        <Button x:Name="BtnLoadProfile"
+                                                Style="{StaticResource SmallIconButtonStyle}"
+                                                Content="&#xE8E5;"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                ToolTip="Load Profile"
+                                                Click="BtnLoadProfile_Click"
+                                                Margin="5,0,0,0"/>
+
+                                        <Button x:Name="BtnSaveProfile"
+                                                Style="{StaticResource SmallIconButtonStyle}"
+                                                Content="&#xE74E;"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                ToolTip="Save Profile"
+                                                Click="BtnSaveProfile_Click"
+                                                Margin="5,0,0,0"/>
+
+                                        <Button x:Name="BtnManageProfiles"
+                                                Style="{StaticResource SmallIconButtonStyle}"
+                                                Content="&#xE712;"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                ToolTip="Manage Profiles"
+                                                Click="BtnManageProfiles_Click"
+                                                Margin="5,0,0,0"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Profiles List -->
+                                <ScrollViewer Grid.Row="1" 
+                                              Margin="0,15,0,0"
+                                              VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="ProfilesList"
+                                                  ItemsSource="{Binding Profiles}"
+                                                  ItemTemplate="{StaticResource ProfileTemplate}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Vertical"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+
+                        <!-- System Info -->
+                        <Border Grid.Row="2" 
+                                Background="{StaticResource QuantumCardBackground}"
+                                CornerRadius="8"
+                                Margin="15"
+                                Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="SYSTEM INFO"
+                                           Foreground="{StaticResource QuantumDimText}"
+                                           FontSize="10"
+                                           FontWeight="Bold"
+                                           Margin="0,0,0,8"/>
+
+                                <!-- CPU -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="CPU:"
+                                               Foreground="{StaticResource QuantumDimText}"
+                                               FontSize="11"
+                                               Width="40"/>
+                                    <TextBlock x:Name="TxtCpuInfo"
+                                               Text="--"
+                                               Foreground="{StaticResource QuantumLightText}"
+                                               FontSize="11"/>
+                                </StackPanel>
+
+                                <!-- GPU -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="GPU:"
+                                               Foreground="{StaticResource QuantumDimText}"
+                                               FontSize="11"
+                                               Width="40"/>
+                                    <TextBlock x:Name="TxtGpuInfo"
+                                               Text="--"
+                                               Foreground="{StaticResource QuantumLightText}"
+                                               FontSize="11"/>
+                                </StackPanel>
+
+                                <!-- RAM -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="RAM:"
+                                               Foreground="{StaticResource QuantumDimText}"
+                                               FontSize="11"
+                                               Width="40"/>
+                                    <TextBlock x:Name="TxtRamInfo"
+                                               Text="--"
+                                               Foreground="{StaticResource QuantumLightText}"
+                                               FontSize="11"/>
+                                </StackPanel>
+
+                                <!-- Windows -->
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="OS:"
+                                               Foreground="{StaticResource QuantumDimText}"
+                                               FontSize="11"
+                                               Width="40"/>
+                                    <TextBlock x:Name="TxtOsInfo"
+                                               Text="--"
+                                               Foreground="{StaticResource QuantumLightText}"
+                                               FontSize="11"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ===== CONTENT AREA ===== -->
+                <Border Grid.Column="1" 
+                        Background="{StaticResource QuantumContentBackground}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <!-- Performance Dashboard -->
+                            <RowDefinition Height="*"/>
+                            <!-- Details Area -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Performance Dashboard -->
+                        <Border Grid.Row="0"
+                                Background="{StaticResource QuantumDashboardBackground}"
+                                CornerRadius="0,0,10,10"
+                                Padding="20,15"
+                                BorderThickness="0,0,0,1"
+                                BorderBrush="{StaticResource QuantumDividerBrush}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Performance Cards -->
+                                <ItemsControl Grid.Column="0" 
+                                              x:Name="PerformanceCards"
+                                              ItemsSource="{Binding PerformanceMetrics}"
+                                              ItemTemplate="{StaticResource PerformanceCardTemplate}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="5" Rows="1"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+
+                                <!-- Live Monitoring Toggle -->
+                                <StackPanel Grid.Column="1" 
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="LIVE MONITORING"
+                                               Foreground="{StaticResource QuantumDimText}"
+                                               FontSize="10"
+                                               FontWeight="Bold"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0"/>
+
+                                    <ToggleButton x:Name="ToggleLiveMonitoring"
+                                                  Style="{StaticResource QuantumToggleStyle}"
+                                                  IsChecked="True"
+                                                  Checked="ToggleLiveMonitoring_Checked"
+                                                  Unchecked="ToggleLiveMonitoring_Unchecked"
+                                                  ToolTip="Toggle real-time performance monitoring"/>
+
+                                    <Button x:Name="BtnAdvancedMetrics"
+                                            Style="{StaticResource SmallIconButtonStyle}"
+                                            Content="&#xE9A2;"
+                                            FontFamily="Segoe MDL2 Assets"
+                                            ToolTip="Advanced Metrics"
+                                            Click="BtnAdvancedMetrics_Click"
+                                            Margin="10,0,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Details Area with Tabs -->
+                        <TabControl Grid.Row="1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Margin="15">
+                            <TabControl.Resources>
+                                <Style TargetType="TabItem">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="TabItem">
+                                                <Border Name="Border" 
+                                                        Background="Transparent" 
+                                                        BorderBrush="Transparent"
+                                                        BorderThickness="0"
+                                                        Margin="0,0,5,0">
+                                                    <ContentPresenter x:Name="ContentSite"
+                                                                      VerticalAlignment="Center"
+                                                                      HorizontalAlignment="Center"
+                                                                      ContentSource="Header"
+                                                                      Margin="12,8"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Border" Property="Background" Value="{StaticResource QuantumTabSelected}"/>
+                                                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource QuantumAccentPurple}"/>
+                                                        <Setter TargetName="Border" Property="BorderThickness" Value="0,0,0,2"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource QuantumAccentPurple}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="False">
+                                                        <Setter Property="Foreground" Value="{StaticResource QuantumDimText}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </TabControl.Resources>
+
+                            <!-- Quantum Optimizations Tab -->
+                            <TabItem Header="QUANTUM OPTIMIZATIONS">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="5">
+                                    <StackPanel>
+                                        <!-- Performance Section -->
+                                        <GroupBox Header="PERFORMANCE TWEAKS" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}"
+                                                  Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <!-- CPU Optimization -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Neural CPU Governor"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="AI-driven frequency control for optimal gaming performance"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleCpuGovernor"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- GPU Optimization -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Temporal GPU Scheduling"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Time-based GPU allocation for frame consistency"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleGpuScheduling"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Memory Optimization -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Holographic Memory Compression"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="GPU-accelerated RAM compression for faster access"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleMemoryCompression"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="False"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <!-- Network Section -->
+                                        <GroupBox Header="NETWORK &amp; HITREG 2.0" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}"
+                                                  Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <!-- Entanglement Prediction -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Entanglement Packet Prediction"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Quantum-based packet forecasting for reduced latency"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="TogglePacketPrediction"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Chronal Displacement -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Chronal HitReg Displacement"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Client runs 8-12ms ahead for improved hit registration"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                            <TextBlock Text="⚠️ FiveM-specific optimization"
+                                                                       FontSize="10"
+                                                                       Foreground="{StaticResource QuantumWarning}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="0,4,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleChronalDisplacement"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Neural Sync -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Neural Sync Prediction"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="AI learns server tick patterns for perfect synchronization"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleNeuralSync"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <!-- System Section -->
+                                        <GroupBox Header="SYSTEM OPTIMIZATIONS" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}">
+                                            <StackPanel>
+                                                <!-- Quantum Cleaner -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="AI-Powered Quantum Cleaner"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Neural network identifies and removes unnecessary files"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleQuantumCleaner"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- SSD Optimization -->
+                                                <Border Style="{StaticResource TweakItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Quantum SSD Defragmentation"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="3D optimization for PCIe 7.0 SSDs"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleSsdDefrag"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="False"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+                                        </GroupBox>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+
+                            <!-- System Monitoring Tab -->
+                            <TabItem Header="SYSTEM MONITORING">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Charts Container -->
+                                    <TabControl Grid.Row="0"
+                                                Background="Transparent"
+                                                BorderThickness="0">
+                                        <TabItem Header="CPU &amp; GPU">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- CPU Chart -->
+                                                <Border Grid.Row="0" 
+                                                        Style="{StaticResource ChartContainerStyle}">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                                            <TextBlock Text="CPU USAGE"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock x:Name="TxtCpuUsage"
+                                                                       Text=" --%"
+                                                                       Foreground="{StaticResource QuantumAccentCyan}"
+                                                                       FontWeight="Bold"
+                                                                       Margin="10,0,0,0"/>
+                                                            <TextBlock x:Name="TxtCpuTemp"
+                                                                       Text=" --°C"
+                                                                       Foreground="{Binding Text, ElementName=TxtCpuTemp, Converter={StaticResource CpuTempConverter}}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="10,0,0,0"/>
+                                                        </StackPanel>
+
+                                                        <!-- CPU Chart wird per Code hinzugefügt -->
+                                                        <Border Grid.Row="1" 
+                                                                x:Name="CpuChartContainer"
+                                                                Background="{StaticResource QuantumChartBackground}"
+                                                                CornerRadius="6"
+                                                                Margin="0,10,0,0"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- GPU Chart -->
+                                                <Border Grid.Row="1" 
+                                                        Style="{StaticResource ChartContainerStyle}"
+                                                        Margin="0,15,0,0">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                                            <TextBlock Text="GPU USAGE"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock x:Name="TxtGpuUsage"
+                                                                       Text=" --%"
+                                                                       Foreground="{StaticResource QuantumAccentPurple}"
+                                                                       FontWeight="Bold"
+                                                                       Margin="10,0,0,0"/>
+                                                            <TextBlock x:Name="TxtGpuTemp"
+                                                                       Text=" --°C"
+                                                                       Foreground="{StaticResource QuantumWarning}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="10,0,0,0"/>
+                                                            <TextBlock x:Name="TxtGpuVram"
+                                                                       Text=" --/-- GB"
+                                                                       Foreground="{StaticResource QuantumAccentBlue}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="10,0,0,0"/>
+                                                        </StackPanel>
+
+                                                        <!-- GPU Chart wird per Code hinzugefügt -->
+                                                        <Border Grid.Row="1" 
+                                                                x:Name="GpuChartContainer"
+                                                                Background="{StaticResource QuantumChartBackground}"
+                                                                CornerRadius="6"
+                                                                Margin="0,10,0,0"/>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </TabItem>
+
+                                        <TabItem Header="MEMORY &amp; NETWORK">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- RAM Chart -->
+                                                <Border Grid.Row="0" 
+                                                        Style="{StaticResource ChartContainerStyle}">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                                            <TextBlock Text="MEMORY USAGE"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock x:Name="TxtMemoryUsage"
+                                                                       Text=" --/-- GB (--%)"
+                                                                       Foreground="{StaticResource QuantumAccentGreen}"
+                                                                       FontWeight="Bold"
+                                                                       Margin="10,0,0,0"/>
+                                                        </StackPanel>
+
+                                                        <!-- RAM Chart -->
+                                                        <Border Grid.Row="1" 
+                                                                x:Name="MemoryChartContainer"
+                                                                Background="{StaticResource QuantumChartBackground}"
+                                                                CornerRadius="6"
+                                                                Margin="0,10,0,0"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Network Chart -->
+                                                <Border Grid.Row="1" 
+                                                        Style="{StaticResource ChartContainerStyle}"
+                                                        Margin="0,15,0,0">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                                            <TextBlock Text="NETWORK ACTIVITY"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock x:Name="TxtNetworkUp"
+                                                                       Text=" ▲ -- MB/s"
+                                                                       Foreground="{StaticResource QuantumAccentGreen}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="10,0,0,0"/>
+                                                            <TextBlock x:Name="TxtNetworkDown"
+                                                                       Text=" ▼ -- MB/s"
+                                                                       Foreground="{StaticResource QuantumAccentBlue}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="10,0,0,0"/>
+                                                            <TextBlock x:Name="TxtNetworkLatency"
+                                                                       Text=" Ping: -- ms"
+                                                                       Foreground="{Binding Text, ElementName=TxtNetworkLatency, Converter={StaticResource LatencyColorConverter}}"
+                                                                       FontWeight="SemiBold"
+                                                                       Margin="10,0,0,0"/>
+                                                        </StackPanel>
+
+                                                        <!-- Network Chart -->
+                                                        <Border Grid.Row="1" 
+                                                                x:Name="NetworkChartContainer"
+                                                                Background="{StaticResource QuantumChartBackground}"
+                                                                CornerRadius="6"
+                                                                Margin="0,10,0,0"/>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </TabItem>
+
+                                        <TabItem Header="FIVEM SPECIFIC">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <StackPanel>
+                                                    <!-- FiveM Process Info -->
+                                                    <GroupBox Header="FIVEM PROCESS" 
+                                                              Style="{StaticResource QuantumGroupBoxStyle}"
+                                                              Margin="0,0,0,15">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <StackPanel Grid.Column="0">
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                                    <TextBlock Text="Status:"
+                                                                               Foreground="{StaticResource QuantumDimText}"
+                                                                               Width="60"/>
+                                                                    <TextBlock x:Name="TxtFiveMStatus"
+                                                                               Text="Not Running"
+                                                                               Foreground="{StaticResource QuantumWarning}"
+                                                                               FontWeight="SemiBold"/>
+                                                                </StackPanel>
+
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                                    <TextBlock Text="PID:"
+                                                                               Foreground="{StaticResource QuantumDimText}"
+                                                                               Width="60"/>
+                                                                    <TextBlock x:Name="TxtFiveMPid"
+                                                                               Text="--"
+                                                                               Foreground="{StaticResource QuantumLightText}"/>
+                                                                </StackPanel>
+
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                                    <TextBlock Text="CPU:"
+                                                                               Foreground="{StaticResource QuantumDimText}"
+                                                                               Width="60"/>
+                                                                    <TextBlock x:Name="TxtFiveMCpu"
+                                                                               Text="--%"
+                                                                               Foreground="{StaticResource QuantumAccentCyan}"/>
+                                                                </StackPanel>
+
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="RAM:"
+                                                                               Foreground="{StaticResource QuantumDimText}"
+                                                                               Width="60"/>
+                                                                    <TextBlock x:Name="TxtFiveMRam"
+                                                                               Text="-- MB"
+                                                                               Foreground="{StaticResource QuantumAccentGreen}"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <Button x:Name="BtnFiveMTaskManager"
+                                                                        Content="Task Manager"
+                                                                        Style="{StaticResource SmallButtonStyle}"
+                                                                        Click="BtnFiveMTaskManager_Click"
+                                                                        Margin="0,0,0,5"/>
+                                                                <Button x:Name="BtnFiveMPriority"
+                                                                        Content="Set Priority"
+                                                                        Style="{StaticResource SmallButtonStyle}"
+                                                                        Click="BtnFiveMPriority_Click"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </GroupBox>
+
+                                                    <!-- FiveM Network Stats -->
+                                                    <GroupBox Header="FIVEM NETWORK STATISTICS" 
+                                                              Style="{StaticResource QuantumGroupBoxStyle}"
+                                                              Margin="0,0,0,15">
+                                                        <Grid>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+
+                                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                                                                <TextBlock Text="Server Latency:"
+                                                                           Foreground="{StaticResource QuantumDimText}"
+                                                                           Width="100"/>
+                                                                <TextBlock x:Name="TxtFiveMLatency"
+                                                                           Text="-- ms"
+                                                                           Foreground="{Binding Text, ElementName=TxtFiveMLatency, Converter={StaticResource LatencyColorConverter}}"
+                                                                           FontWeight="SemiBold"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                                                <TextBlock Text="Packet Loss:"
+                                                                           Foreground="{StaticResource QuantumDimText}"
+                                                                           Width="100"/>
+                                                                <TextBlock x:Name="TxtFiveMPacketLoss"
+                                                                           Text="--%"
+                                                                           Foreground="{StaticResource QuantumWarning}"
+                                                                           FontWeight="SemiBold"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                                                <TextBlock Text="Jitter:"
+                                                                           Foreground="{StaticResource QuantumDimText}"
+                                                                           Width="100"/>
+                                                                <TextBlock x:Name="TxtFiveMJitter"
+                                                                           Text="-- ms"
+                                                                           Foreground="{StaticResource QuantumAccentPurple}"
+                                                                           FontWeight="SemiBold"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </GroupBox>
+
+                                                    <!-- FiveM Cache -->
+                                                    <GroupBox Header="FIVEM CACHE MANAGEMENT" 
+                                                              Style="{StaticResource QuantumGroupBoxStyle}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <StackPanel Grid.Column="0">
+                                                                <TextBlock Text="Cache Size:"
+                                                                           Foreground="{StaticResource QuantumDimText}"
+                                                                           Margin="0,0,0,5"/>
+                                                                <TextBlock x:Name="TxtFiveMCacheSize"
+                                                                           Text="Calculating..."
+                                                                           Foreground="{StaticResource QuantumLightText}"
+                                                                           FontWeight="SemiBold"/>
+                                                                <ProgressBar x:Name="ProgressFiveMCache"
+                                                                            Minimum="0" Maximum="100" Value="0"
+                                                                            Height="8"
+                                                                            Margin="0,5,0,0"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <Button x:Name="BtnClearFiveMCache"
+                                                                        Content="Clear Cache"
+                                                                        Style="{StaticResource SmallButtonStyle}"
+                                                                        Click="BtnClearFiveMCache_Click"
+                                                                        ToolTip="Clear FiveM cache files"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </GroupBox>
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </TabItem>
+                                    </TabControl>
+
+                                    <!-- Live Log Console -->
+                                    <Border Grid.Row="1" 
+                                            Background="{StaticResource QuantumCardBackground}"
+                                            CornerRadius="6"
+                                            Margin="0,15,0,0"
+                                            Padding="10">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                                <TextBlock Text="SYSTEM LOG"
+                                                           FontWeight="Bold"
+                                                           Foreground="{StaticResource QuantumLightText}"/>
+                                                <Button x:Name="BtnClearLog"
+                                                        Style="{StaticResource SmallIconButtonStyle}"
+                                                        Content="&#xE894;"
+                                                        FontFamily="Segoe MDL2 Assets"
+                                                        ToolTip="Clear Log"
+                                                        Click="BtnClearLog_Click"
+                                                        Margin="10,0,0,0"/>
+                                                <Button x:Name="BtnExportLog"
+                                                        Style="{StaticResource SmallIconButtonStyle}"
+                                                        Content="&#xE74E;"
+                                                        FontFamily="Segoe MDL2 Assets"
+                                                        ToolTip="Export Log"
+                                                        Click="BtnExportLog_Click"
+                                                        Margin="5,0,0,0"/>
+                                                <Button x:Name="BtnToggleAutoScroll"
+                                                        Style="{StaticResource SmallIconButtonStyle}"
+                                                        Content="&#xE8C5;"
+                                                        FontFamily="Segoe MDL2 Assets"
+                                                        ToolTip="Auto-scroll"
+                                                        Click="BtnToggleAutoScroll_Click"
+                                                        Margin="5,0,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- Log TextBox -->
+                                            <TextBox Grid.Row="1"
+                                                     x:Name="TxtSystemLog"
+                                                     Background="Transparent"
+                                                     Foreground="{StaticResource QuantumLightText}"
+                                                     BorderThickness="0"
+                                                     FontFamily="Consolas"
+                                                     FontSize="11"
+                                                     IsReadOnly="True"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     TextWrapping="NoWrap"
+                                                     Margin="0,10,0,0"
+                                                     TextChanged="TxtSystemLog_TextChanged"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+
+                            <!-- Settings Tab -->
+                            <TabItem Header="SETTINGS">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Margin="5">
+                                        <!-- General Settings -->
+                                        <GroupBox Header="GENERAL SETTINGS" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}"
+                                                  Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Start with Windows"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Automatically start when Windows boots"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleStartWithWindows"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Minimize to System Tray"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Close button minimizes to tray instead of exiting"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleMinimizeToTray"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Auto-check for Updates"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Automatically check for new versions"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleAutoUpdate"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <!-- Performance Settings -->
+                                        <GroupBox Header="PERFORMANCE SETTINGS" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}"
+                                                  Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Enable Quantum Visualizer"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Show particle effects and visualizations (uses 1-2% CPU)"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleQuantumVisualizer"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      Checked="ToggleQuantumVisualizer_Checked"
+                                                                      Unchecked="ToggleQuantumVisualizer_Unchecked"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="High Performance Monitoring"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="More frequent system checks (increases CPU usage)"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleHighPerfMonitoring"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Sound Effects"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Play sounds for actions and notifications"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleSoundEffects"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <!-- Security Settings -->
+                                        <GroupBox Header="SECURITY SETTINGS" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}"
+                                                  Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Enable TPM Validation"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Require TPM 2.0/3.0 for certain optimizations"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleTpmValidation"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Create System Restore Points"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Automatically create restore points before changes"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleRestorePoints"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      IsChecked="True"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="Enhanced Logging"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource QuantumLightText}"/>
+                                                            <TextBlock Text="Log detailed information for debugging"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       TextWrapping="Wrap"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+
+                                                        <ToggleButton Grid.Column="1" 
+                                                                      x:Name="ToggleEnhancedLogging"
+                                                                      Style="{StaticResource QuantumToggleStyle}"
+                                                                      VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+                                        </GroupBox>
+
+                                        <!-- About Section -->
+                                        <GroupBox Header="ABOUT" 
+                                                  Style="{StaticResource QuantumGroupBoxStyle}">
+                                            <StackPanel>
+                                                <Border Style="{StaticResource SettingItemStyle}">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Image Grid.Column="0"
+                                                               Source="../Resources/Icons/quantum_logo_large.png"
+                                                               Width="64" Height="64"
+                                                               Margin="0,0,15,0"/>
+
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                            <TextBlock Text="FiveM Quantum Tweaker 2026"
+                                                                       FontSize="16"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource QuantumAccentPurple}"/>
+                                                            <TextBlock Text="Version 2.0.0 (Build 2026.1)"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumDimText}"
+                                                                       Margin="0,2,0,0"/>
+                                                            <TextBlock Text="Advanced Performance Optimization System"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource QuantumLightText}"
+                                                                       Margin="0,5,0,0"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+
+                                                <StackPanel Orientation="Horizontal" 
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,15,0,0">
+                                                    <Button x:Name="BtnCheckUpdates"
+                                                            Content="Check for Updates"
+                                                            Style="{StaticResource SmallButtonStyle}"
+                                                            Click="BtnCheckUpdates_Click"
+                                                            Margin="0,0,10,0"/>
+
+                                                    <Button x:Name="BtnViewChangelog"
+                                                            Content="View Changelog"
+                                                            Style="{StaticResource SmallButtonStyle}"
+                                                            Click="BtnViewChangelog_Click"
+                                                            Margin="0,0,10,0"/>
+
+                                                    <Button x:Name="BtnAbout"
+                                                            Content="About"
+                                                            Style="{StaticResource SmallButtonStyle}"
+                                                            Click="BtnAbout_Click"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </GroupBox>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===== BOTTOM BAR ===== -->
+            <Border Grid.Row="3" 
+                    Background="{StaticResource QuantumStatusBarBackground}"
+                    Height="35"
+                    CornerRadius="0,0,10,10"
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="{StaticResource QuantumDividerBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: Quick Stats -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0">
+                        <!-- Optimization Status -->
+                        <TextBlock x:Name="TxtOptimizationStatus"
+                                   Text="Optimizations: Inactive"
+                                   Foreground="{StaticResource QuantumWarning}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+
+                        <!-- Separator -->
+                        <Rectangle Width="1" Height="12" 
+                                   Fill="{StaticResource QuantumDividerBrush}"
+                                   Margin="15,0"/>
+
+                        <!-- Tweak Count -->
+                        <TextBlock x:Name="TxtTweakCount"
+                                   Text="Active Tweaks: 0"
+                                   Foreground="{StaticResource QuantumDimText}"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Center: Progress Bar -->
+                    <Border Grid.Column="1" 
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Width="300">
+                        <Grid>
+                            <ProgressBar x:Name="ProgressGlobal"
+                                        Minimum="0" Maximum="100" Value="0"
+                                        Height="6"
+                                        Style="{StaticResource QuantumProgressBarStyle}"/>
+
+                            <TextBlock x:Name="TxtProgressStatus"
+                                       Text="Ready"
+                                       Foreground="{StaticResource QuantumLightText}"
+                                       FontSize="10"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right: Action Buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,15,0">
+                        <!-- Save Settings -->
+                        <Button x:Name="BtnSaveSettings"
+                                Content="Save Settings"
+                                Style="{StaticResource SmallButtonStyle}"
+                                Click="BtnSaveSettings_Click"
+                                Margin="0,0,10,0"/>
+
+                        <!-- Help Button -->
+                        <Button x:Name="BtnHelp"
+                                Style="{StaticResource SmallIconButtonStyle}"
+                                Content="&#xE897;"
+                                FontFamily="Segoe MDL2 Assets"
+                                ToolTip="Help"
+                                Click="BtnHelp_Click"
+                                Margin="0,0,10,0"/>
+
+                        <!-- Settings Button -->
+                        <Button x:Name="BtnSettings"
+                                Style="{StaticResource SmallIconButtonStyle}"
+                                Content="&#xE713;"
+                                FontFamily="Segoe MDL2 Assets"
+                                ToolTip="Settings"
+                                Click="BtnSettings_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ===== NOTIFICATION OVERLAY ===== -->
+        <Border x:Name="NotificationOverlay"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="20"
+                CornerRadius="8"
+                Background="{StaticResource QuantumCardBackground}"
+                BorderBrush="{StaticResource QuantumAccentPurple}"
+                BorderThickness="1"
+                Visibility="Collapsed"
+                Width="350">
+            <StackPanel>
+                <!-- Notification Header -->
+                <Border Background="{StaticResource QuantumAccentPurple}"
+                        CornerRadius="7,7,0,0"
+                        Padding="12,8">
+                    <StackPanel Orientation="Horizontal">
+                        <Path x:Name="NotificationIcon"
+                              Data="&#xE7BA;"
+                              Fill="White"
+                              Width="16" Height="16"
+                              Margin="0,0,8,0"/>
+                        <TextBlock x:Name="TxtNotificationTitle"
+                                   Text="Notification"
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Notification Content -->
+                <StackPanel Margin="12">
+                    <TextBlock x:Name="TxtNotificationMessage"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource QuantumLightText}"
+                               Margin="0,0,0,10"/>
+
+                    <StackPanel x:Name="NotificationButtons"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button x:Name="BtnNotificationAction"
+                                Content="OK"
+                                Style="{StaticResource SmallButtonStyle}"
+                                Click="BtnNotificationAction_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ===== QUANTUM PROGRESS OVERLAY ===== -->
+        <Border x:Name="QuantumProgressOverlay"
+                Background="#80000000"
+                Visibility="Collapsed"
+                Panel.ZIndex="999">
+            <Grid>
+                <Border Background="{StaticResource QuantumCardBackground}"
+                        CornerRadius="15"
+                        Width="500"
+                        Height="200"
+                        BorderBrush="{StaticResource QuantumAccentPurple}"
+                        BorderThickness="2">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <Border Grid.Row="0"
+                                Background="{StaticResource QuantumAccentPurple}"
+                                CornerRadius="13,13,0,0"
+                                Padding="20,12">
+                            <TextBlock x:Name="TxtProgressOverlayTitle"
+                                       Text="Quantum Optimization"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       FontSize="16"
+                                       HorizontalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Content -->
+                        <StackPanel Grid.Row="1" 
+                                    Margin="20"
+                                    VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtProgressOverlayMessage"
+                                       Text="Applying optimizations..."
+                                       Foreground="{StaticResource QuantumLightText}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,15"/>
+
+                            <ProgressBar x:Name="ProgressOverlay"
+                                        Minimum="0" Maximum="100" 
+                                        Height="20"
+                                        Style="{StaticResource QuantumProgressBarStyle}"/>
+
+                            <TextBlock x:Name="TxtProgressOverlaySubMessage"
+                                       Text="Please wait..."
+                                       Foreground="{StaticResource QuantumDimText}"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,10,0,0"/>
+                        </StackPanel>
+
+                        <!-- Cancel Button -->
+                        <Border Grid.Row="2"
+                                BorderThickness="0,1,0,0"
+                                BorderBrush="{StaticResource QuantumDividerBrush}"
+                                Padding="20,10">
+                            <Button x:Name="BtnCancelProgress"
+                                    Content="Cancel"
+                                    Style="{StaticResource SmallButtonStyle}"
+                                    HorizontalAlignment="Center"
+                                    Click="BtnCancelProgress_Click"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

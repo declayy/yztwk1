@@ -1,0 +1,128 @@
+<Application x:Class="FiveMQuantumTweaker2026.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:FiveMQuantumTweaker2026"
+             xmlns:ui="clr-namespace:FiveMQuantumTweaker2026.UI"
+             Startup="Application_Startup"
+             Exit="Application_Exit"
+             SessionEnding="Application_SessionEnding"
+             DispatcherUnhandledException="Application_DispatcherUnhandledException">
+
+    <Application.Resources>
+        <!-- Haupt-Ressourcen-Verzeichnis -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Quantum Theme -->
+                <ResourceDictionary Source="UI/Themes/QuantumTheme.xaml"/>
+
+                <!-- Farbpalette -->
+                <ResourceDictionary Source="UI/Themes/Colors.xaml"/>
+
+                <!-- Styles für Controls -->
+                <ResourceDictionary Source="UI/Themes/ControlStyles.xaml"/>
+
+                <!-- Animationen -->
+                <ResourceDictionary Source="UI/Themes/Animations.xaml"/>
+
+                <!-- Icons und Bilder -->
+                <ResourceDictionary Source="UI/Themes/Icons.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Globale Werte -->
+            <sys:Double x:Key="WindowCornerRadius">12</sys:Double>
+            <sys:Double x:Key="ButtonCornerRadius">8</sys:Double>
+            <Thickness x:Key="StandardMargin">8</Thickness>
+            <Thickness x:Key="CompactMargin">4</Thickness>
+
+            <!-- App-Informationen -->
+            <x:String x:Key="AppName">FiveM Quantum Tweaker 2026</x:String>
+            <x:String x:Key="AppVersion">2.0.0</x:String>
+            <x:String x:Key="AppBuild">2026.1</x:String>
+
+            <!-- Pfade -->
+            <x:String x:Key="FiveMDefaultPath">C:\Program Files\FiveM</x:String>
+            <x:String x:Key="UserDataPath">%LOCALAPPDATA%\FiveMQuantumTweaker2026</x:String>
+            <x:String x:Key="BackupPath">%LOCALAPPDATA%\FiveMQuantumTweaker2026\Backups</x:String>
+
+            <!-- Standard-Schriftarten -->
+            <FontFamily x:Key="PrimaryFont">Segoe UI, Inter, system-ui, sans-serif</FontFamily>
+            <FontFamily x:Key="MonospaceFont">Cascadia Code, Consolas, Monaco, monospace</FontFamily>
+            <FontFamily x:Key="DigitalFont">Seven Segment, Orbitron, Digital-7, monospace</FontFamily>
+
+            <!-- Schriftgrößen -->
+            <sys:Double x:Key="FontSizeSmall">11</sys:Double>
+            <sys:Double x:Key="FontSizeNormal">13</sys:Double>
+            <sys:Double x:Key="FontSizeMedium">14</sys:Double>
+            <sys:Double x:Key="FontSizeLarge">16</sys:Double>
+            <sys:Double x:Key="FontSizeXLarge">20</sys:Double>
+            <sys:Double x:Key="FontSizeXXLarge">28</sys:Double>
+
+            <!-- Animation-Dauern -->
+            <Duration x:Key="FastAnimation">0:0:0.15</Duration>
+            <Duration x:Key="NormalAnimation">0:0:0.3</Duration>
+            <Duration x:Key="SlowAnimation">0:0:0.5</Duration>
+            <Duration x:Key="QuantumAnimation">0:0:1.5</Duration>
+
+            <!-- Konverter -->
+            <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+            <local:PercentageConverter x:Key="PercentageConverter"/>
+            <local:ByteSizeConverter x:Key="ByteSizeConverter"/>
+            <local:TemperatureConverter x:Key="TemperatureConverter"/>
+            <local:FrequencyConverter x:Key="FrequencyConverter"/>
+            <local:LatencyColorConverter x:Key="LatencyColorConverter"/>
+            <local:FpsColorConverter x:Key="FpsColorConverter"/>
+
+            <!-- Command-Bindings -->
+            <ui:RelayCommand x:Key="ExitCommand" 
+                           ExecuteMethod="ExitApplication" 
+                           CanExecuteMethod="CanExit"/>
+            <ui:RelayCommand x:Key="MinimizeCommand" 
+                           ExecuteMethod="MinimizeWindow"/>
+            <ui:RelayCommand x:Key="MaximizeCommand" 
+                           ExecuteMethod="MaximizeWindow"/>
+            <ui:RelayCommand x:Key="ShowSettingsCommand" 
+                           ExecuteMethod="ShowSettings"/>
+
+            <!-- Tweak-Profile -->
+            <local:OptimizationProfile x:Key="DefaultProfile" 
+                                     ProfileName="Quantum Default"
+                                     IsActive="True"
+                                     CreationDate="{x:Static sys:DateTime.Now}"/>
+
+            <local:OptimizationProfile x:Key="GamingProfile" 
+                                     ProfileName="Extreme Gaming"
+                                     IsActive="False"/>
+
+            <local:OptimizationProfile x:Key="StreamingProfile" 
+                                     ProfileName="Streaming Optimized"
+                                     IsActive="False"/>
+
+            <local:OptimizationProfile x:Key="BatteryProfile" 
+                                     ProfileName="Battery Saver"
+                                     IsActive="False"/>
+
+            <!-- System State Template -->
+            <local:SystemSnapshot x:Key="DefaultSystemState"
+                                Timestamp="{x:Static sys:DateTime.Now}"
+                                CpuUsage="0"
+                                MemoryUsage="0"
+                                GpuUsage="0"
+                                NetworkLatency="0"
+                                Fps="0"/>
+
+            <!-- Quantum Visualisierungs-Einstellungen -->
+            <local:QuantumVisualizationSettings x:Key="DefaultVizSettings"
+                                              ParticleCount="500"
+                                              AnimationSpeed="1.0"
+                                              ColorTheme="PurpleBlue"
+                                              ShowParticles="True"
+                                              ShowWaves="True"
+                                              ShowGlow="True"
+                                              Opacity="0.7"
+                                              MaxCpuUsage="2.0"/>
+
+        </ResourceDictionary>
+    </Application.Resources>
+
+</Application>
